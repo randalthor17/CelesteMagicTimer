@@ -418,6 +418,7 @@ class Route(collections.UserList): # the route class object is a user defined li
     
     # setting class variables from the route list object
     def __init__(self, name, time_field, pieces, level_names, reset_trigger):
+        # here we can see something mentioned called a piece, here piece means any item that a route list contains
         if type(pieces[-1]) is not Split or pieces[-1].level != 0:
             raise TypeError("Last piece of route must be top-level Split")
         super().__init__(pieces)
@@ -485,7 +486,7 @@ class Route(collections.UserList): # the route class object is a user defined li
 
 
 """
-from rhelmot xemself:
+NOTE: from rhelmot xemself:
 "SplitsManager is the big guy, the class that observes an AutoSplitterInfo updating and uses that to tell where you are in the route, what your current splits are, whether a split is a gold, etc. All the methods on it are about answering questions about the current run, e.g. are we done? what's the next trigger we're waiting for? what's the next/previous split of a given level? It also has methods for updating clerical information about the current run, e.g. resetting the run, marking when you finish a split, noting when you get a gold split, etc."
 couldn't have said it better myself.
 """
@@ -528,11 +529,17 @@ class SplitsManager:
     def done(self):
         return self.current_piece_idx >= len(self.route)
 
+    """
+    NOTE: to understand why the functions below have underscores in their names,
+    "_backwards_split is the private API (private methods in python are prefixed with an underscore but aren't really private), it takes an index of a piece and returns an index of another piece, specifically a split piece, and previous_split is the public API, which takes no input but the current state and returns the actual split object which is previous"
+    """
+
     @property
     def current_piece(self):
         if self.done:
             return None
         return self.route[self.current_piece_idx]
+
 
     # this returns the index of the current split given the level of the split
     def _current_split_idx(self, level=0):
@@ -554,7 +561,7 @@ class SplitsManager:
                 return None
         return idx
 
-    # TODO: update what this does
+    # this subtracts 1 from the current split index, so we can move backwards and see how much time the previous split took
     def _backwards_split(self, idx, level=0):
         idx -= 1
         if idx < 0:
@@ -592,7 +599,7 @@ class SplitsManager:
     def current_time(self):
         return self.asi[self.route.time_field] - self.start_time
 
-    # this basically does the same thing as the current_time function, but it subtracts the split start time from the current time
+    # this basically does the same thing as the current_time function, but it subtracts the split start time from the current time, and to do this, it gets the end thime of the previous split and subtracts that from the current unix time
     def current_segment_time(self, level=0):
         if self.done:
             return None
@@ -674,7 +681,7 @@ class SplitsManager:
 
     
     """
-    from rhelmot xemself:
+    NOTE: from rhelmot xemself:
     "update is the heart of the heart, the core of the SplitsManager. It is called once per frame and is in charge of noticing when you've completed a split. Additionally, it's in charge of noticing when you've reset a run, so that's what the commit() reset() stuff is about."
     """
     def update(self):
